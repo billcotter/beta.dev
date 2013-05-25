@@ -40,6 +40,7 @@ class Genesis_Featured_Post extends WP_Widget {
 			'posts_offset'            => 0,
 			'orderby'                 => '',
 			'order'                   => '',
+			'exclude_displayed'       => 0,
 			'show_image'              => 0,
 			'image_alignment'         => '',
 			'image_size'              => '',
@@ -59,7 +60,7 @@ class Genesis_Featured_Post extends WP_Widget {
 		);
 
 		$widget_ops = array(
-			'classname'   => 'featuredpost',
+			'classname'   => 'featured-content featuredpost',
 			'description' => __( 'Displays featured posts with thumbnails', 'genesis' ),
 		);
 
@@ -69,7 +70,7 @@ class Genesis_Featured_Post extends WP_Widget {
 			'height'  => 350,
 		);
 
-		$this->WP_Widget( 'featured-post', __( 'Genesis - Featured Posts', 'genesis' ), $widget_ops, $control_ops );
+		parent::__construct( 'featured-post', __( 'Genesis - Featured Posts', 'genesis' ), $widget_ops, $control_ops );
 
 	}
 
@@ -81,7 +82,9 @@ class Genesis_Featured_Post extends WP_Widget {
 	 * @param array $args Display arguments including before_title, after_title, before_widget, and after_widget.
 	 * @param array $instance The settings for the particular instance of the widget
 	 */
-	function widget( $args, $instance ) {
+	function widget( array $args, array $instance ) {
+
+		global $_genesis_displayed_ids;
 
 		extract( $args );
 
@@ -102,13 +105,31 @@ class Genesis_Featured_Post extends WP_Widget {
 			'orderby'   => $instance['orderby'],
 			'order'     => $instance['order'],
 		);
+		
+		/** Exclude displayed IDs from this loop? */
+		if ( $instance['exclude_displayed'] )
+			$query_args['post__not_in'] = (array) $_genesis_displayed_ids;
 
 		$featured_posts = new WP_Query( $query_args );
 
 		if ( $featured_posts->have_posts() ) : while ( $featured_posts->have_posts() ) : $featured_posts->the_post();
-			echo '<div class="' . implode( ' ', get_post_class() ) . '">';
 
-			if ( ! empty( $instance['show_image'] ) && $image = genesis_get_image( array( 'format' => 'html', 'size' => $instance['image_size'] ) ) )
+			$_genesis_displayed_ids[] = get_the_ID();
+
+			genesis_markup( array(
+				'html5'   => '<article %s>',
+				'xhtml'   => sprintf( '<div class="%s">', implode( ' ', get_post_class() ) ),
+				'context' => 'entry',
+			) );
+
+			$image = genesis_get_image( array(
+				'format'  => 'html',
+				'size'    => $instance['image_size'],
+				'context' => 'featured-post-widget',
+				'attr'    => genesis_attr( 'entry-image-widget', array( 'output' => 'array' ) ),
+			) );
+
+			if ( $instance['show_image'] && $image )
 				printf( '<a href="%s" title="%s" class="%s">%s</a>', get_permalink(), the_title_attribute( 'echo=0' ), esc_attr( $instance['image_alignment'] ), $image );
 
 			if ( ! empty( $instance['show_gravatar'] ) ) {
@@ -117,11 +138,17 @@ class Genesis_Featured_Post extends WP_Widget {
 				echo '</span>';
 			}
 
-			if ( ! empty( $instance['show_title'] ) )
-				printf( '<h2><a href="%s" title="%s">%s</a></h2>', get_permalink(), the_title_attribute( 'echo=0' ), get_the_title() );
+			if ( $instance['show_title'] && $instance['show_byline'] )
+				echo genesis_html5() ? '<header class="entry-header">' : '';
+			
+				if ( ! empty( $instance['show_title'] ) )
+					printf( '<h2 class="entry-title"><a href="%s" title="%s">%s</a></h2>', get_permalink(), the_title_attribute( 'echo=0' ), get_the_title() );
 
-			if ( ! empty( $instance['show_byline'] ) && ! empty( $instance['post_info'] ) )
-				printf( '<p class="byline post-info">%s</p>', do_shortcode( $instance['post_info'] ) );
+				if ( ! empty( $instance['show_byline'] ) && ! empty( $instance['post_info'] ) )
+					printf( genesis_html5() ? '<p class="entry-meta">%s</p>' : '<p class="byline post-info">%s</p>', do_shortcode( $instance['post_info'] ) );
+			
+			if ( $instance['show_title'] && $instance['show_byline'] )
+				echo genesis_html5() ? '</header>' : '';
 
 			if ( ! empty( $instance['show_content'] ) ) {
 				if ( 'excerpt' == $instance['show_content'] )
@@ -132,7 +159,10 @@ class Genesis_Featured_Post extends WP_Widget {
 					the_content( esc_html( $instance['more_text'] ) );
 			}
 
-			echo '</div><!--end post_class()-->'."\n\n";
+			genesis_markup( array(
+				'html5' => '</article>',
+				'xhtml' => '</div>',
+			) );
 
 		endwhile; endif;
 
@@ -155,6 +185,7 @@ class Genesis_Featured_Post extends WP_Widget {
 			if ( $extra_posts->have_posts() ) {
 				while ( $extra_posts->have_posts() ) {
 					$extra_posts->the_post();
+					$_genesis_displayed_ids[] = get_the_ID();
 					$listitems .= sprintf( '<li><a href="%s" title="%s">%s</a></li>', get_permalink(), the_title_attribute( 'echo=0' ), get_the_title() );
 				}
 
@@ -189,7 +220,7 @@ class Genesis_Featured_Post extends WP_Widget {
 	 * @param array $old_instance Old settings for this instance
 	 * @return array Settings to save or bool false to cancel saving
 	 */
-	function update( $new_instance, $old_instance ) {
+	function update( array $new_instance, array $old_instance ) {
 
 		$new_instance['title']     = strip_tags( $new_instance['title'] );
 		$new_instance['more_text'] = strip_tags( $new_instance['more_text'] );
@@ -205,7 +236,7 @@ class Genesis_Featured_Post extends WP_Widget {
 	 *
 	 * @param array $instance Current settings
 	 */
-	function form( $instance ) {
+	function form( array $instance ) {
 
 		/** Merge with defaults */
 		$instance = wp_parse_args( (array) $instance, $this->defaults );
@@ -262,6 +293,11 @@ class Genesis_Featured_Post extends WP_Widget {
 						<option value="DESC" <?php selected( 'DESC', $instance['order'] ); ?>><?php _e( 'Descending (3, 2, 1)', 'genesis' ); ?></option>
 						<option value="ASC" <?php selected( 'ASC', $instance['order'] ); ?>><?php _e( 'Ascending (1, 2, 3)', 'genesis' ); ?></option>
 					</select>
+				</p>
+
+				<p>
+					<input id="<?php echo $this->get_field_id( 'exclude_displayed' ); ?>" type="checkbox" name="<?php echo $this->get_field_name( 'exclude_displayed' ); ?>" value="1" <?php checked( $instance['exclude_displayed'] ); ?>/>
+					<label for="<?php echo $this->get_field_id( 'exclude_displayed' ); ?>"><?php _e( 'Exclude Previously Displayed Posts?', 'genesis' ); ?></label>
 				</p>
 
 			</div>

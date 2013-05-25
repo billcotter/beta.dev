@@ -14,7 +14,7 @@
  *
  * @since 0.1.0
  *
- * @global stdClass $post Post object
+ * @global WP_Post $post Post object.
  *
  * @param integer $index Optional. Index of which image to return from a post. Default is 0
  * @return integer|boolean Returns image ID, or false if image with given index does not exist
@@ -56,8 +56,8 @@ function genesis_get_image_id( $index = 0 ) {
  *
  * @uses genesis_get_image_id()
  *
- * @global stdClass $post
- * @param array $args Optional. Image query arguments. Default is empty array
+ * @global WP_Post $post Post object.
+ * @param array|string $args Optional. Image query arguments. Default is empty array
  * @return string|boolean Returns img element HTML, URL of image, or false
  */
 function genesis_get_image( $args = array() ) {
@@ -70,6 +70,7 @@ function genesis_get_image( $args = array() ) {
 		'num'      => 0,
 		'attr'     => '',
 		'fallback' => 'first-attached',
+		'context'  => '',
 	) );
 
 	$args = wp_parse_args( $args, $defaults );
@@ -84,7 +85,7 @@ function genesis_get_image( $args = array() ) {
 		$id = get_post_thumbnail_id();
 		$html = wp_get_attachment_image( $id, $args['size'], false, $args['attr'] );
 		list( $url ) = wp_get_attachment_image_src( $id, $args['size'], false, $args['attr'] );
-	}	
+	}
 	/** Else if first-attached, pull the first (default) image attachment */
 	elseif ( 'first-attached' == $args['fallback'] ) {
 		$id = genesis_get_image_id( $args['num'] );
@@ -93,6 +94,7 @@ function genesis_get_image( $args = array() ) {
 	}
 	/** Else if fallback array exists */
 	elseif ( is_array( $args['fallback'] ) ) {
+		$id   = 0;
 		$html = $args['fallback']['html'];
 		$url  = $args['fallback']['url'];
 	}
@@ -136,7 +138,7 @@ function genesis_get_image( $args = array() ) {
  *
  * @uses genesis_get_image()
  *
- * @param array $args Optional. Image query arguments. Default is empty array
+ * @param array|string $args Optional. Image query arguments. Default is empty array
  * @return false Returns false if URL is empty
  */
 function genesis_image( $args = array() ) {

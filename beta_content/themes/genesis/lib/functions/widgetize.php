@@ -34,11 +34,20 @@ function genesis_register_sidebar( $args ) {
 	$defaults = (array) apply_filters(
 		'genesis_register_sidebar_defaults',
 		array(
-			'before_widget' => '<div id="%1$s" class="widget %2$s"><div class="widget-wrap">',
-			'after_widget'  => "</div></div>\n",
+			'before_widget' => genesis_markup( array(
+				'html5' => '<section id="%1$s" class="widget %2$s"><div class="widget-wrap">',
+				'xhtml' => '<div id="%1$s" class="widget %2$s"><div class="widget-wrap">',
+				'echo'  => false,
+			) ),
+			'after_widget'  => genesis_markup( array(
+				'html5' => '</div></section>' . "\n",
+				'xhtml' => '</div></div>' . "\n",
+				'echo'  => false
+			) ),
 			'before_title'  => '<h4 class="widgettitle">',
 			'after_title'   => "</h4>\n",
-		)
+		),
+		$args
 	);
 
 	$args = wp_parse_args( $args, $defaults );
@@ -147,8 +156,8 @@ function genesis_widget_area( $id, $args = array() ) {
 	$args = wp_parse_args(
 		$args,
 		array(
-			'before'              => '<div class="widget-area">',
-			'after'               => '</div>',
+			'before'              => genesis_html5() ? '<aside class="widget-area">' : '<div class="widget-area">',
+			'after'               => genesis_html5() ? '</aside>' : '</div>',
 			'default'             => '',
 			'show_inactive'       => 0,
 			'before_sidebar_hook' => 'genesis_before_' . $id . '_widget_area',

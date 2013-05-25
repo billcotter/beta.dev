@@ -25,6 +25,8 @@ hr.div {
 
 .whats-new {
 	border-radius: 5px;
+	height: 180px;
+	width: 160px;
 }
 
 
@@ -49,7 +51,6 @@ hr.div {
 
 .genesis-metaboxes .top-buttons {
 	float: right;
-	padding-right: 20px;
 }
 
 .genesis-metaboxes .top-buttons input {
@@ -57,7 +58,6 @@ hr.div {
 }
 
 .genesis-metaboxes .bottom-buttons {
-	padding-right: 20px;
 	text-align: right;
 }
 
@@ -68,11 +68,6 @@ hr.div {
 .genesis-metaboxes .metabox-holder {
 	clear: both;
 	overflow: hidden;
-	width: 650px;
-}
-
-.genesis-metaboxes .meta-box-sortables {
-	padding-right: 10px;
 }
 
 .genesis-metaboxes .inside {
@@ -95,7 +90,7 @@ hr.div {
 	text-align: center;
 }
 
-.genesis-layout-selector input#default-layout {
+.genesis-layout-selector .default-layout {
 	display: inline;
 }
 
